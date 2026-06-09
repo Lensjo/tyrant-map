@@ -21,8 +21,8 @@ body{
     height:800px;
     overflow:hidden;
     border:2px solid black;
-    cursor:crosshair;
     position:relative;
+    cursor:crosshair;
 }
 
 #map{
@@ -35,7 +35,6 @@ body{
         linear-gradient(to bottom, #ddd 1px, transparent 1px);
 
     background-size:30px 30px;
-
     transform-origin:0 0;
 }
 
@@ -56,7 +55,7 @@ body{
 }
 
 #sidebar{
-    width:280px;
+    width:300px;
 }
 
 .panel{
@@ -88,6 +87,7 @@ body{
             <h3>Map Info</h3>
             <div id="coords">X: -, Y: -</div>
             <div id="zoom">Zoom: 100%</div>
+            <div id="status">Loading guilds...</div>
         </div>
 
         <div class="panel" id="info">
@@ -101,31 +101,46 @@ body{
 
 <script>
 
+const CSV_URL =
+'https://docs.google.com/spreadsheets/d/e/2PACX-1vT5lyYvujRZ3Wn0nR_4P51h4q3XC8RxM7g3UBTsuQbKHp8z7xQYR4VD-51OVqrEjy2tVxxb33e8ZPAn/pub?gid=0&single=true&output=csv';
+
 const mapSize = 250;
 const pixelSize = 750;
 const scaleFactor = pixelSize / mapSize;
 
-const guilds = [
-    { name:"Wolves", x:120, y:80, color:"red" },
-    { name:"Dragons", x:200, y:150, color:"blue" },
-    { name:"Titans", x:50, y:210, color:"green" },
-    { name:"Phoenix", x:170, y:50, color:"orange" },
-    { name:"Legion", x:75, y:120, color:"purple" }
-];
-
 const map = document.getElementById("map");
 
-guilds.forEach(g => {
+// Coordinate labels
+
+for(let i = 0; i <= 250; i += 50){
+
+    const xLabel = document.createElement("div");
+    xLabel.className = "label";
+    xLabel.innerText = i;
+    xLabel.style.left = (i * scaleFactor - 10) + "px";
+    xLabel.style.top = "730px";
+    map.appendChild(xLabel);
+
+    const yLabel = document.createElement("div");
+    yLabel.className = "label";
+    yLabel.innerText = i;
+    yLabel.style.left = "5px";
+    yLabel.style.top = (pixelSize - i * scaleFactor - 8) + "px";
+    map.appendChild(yLabel);
+}
+
+function addGuild(g){
 
     const marker = document.createElement("div");
 
     marker.className = "guild";
     marker.style.background = g.color;
 
-    marker.style.left = (g.x * scaleFactor - 7) + "px";
-    marker.style.top = (pixelSize - g.y * scaleFactor - 7) + "px";
+    marker.style.left =
+        (g.x * scaleFactor - 7) + "px";
 
-    marker.title = g.name;
+    marker.style.top =
+        (pixelSize - g.y * scaleFactor - 7) + "px";
 
     marker.onclick = () => {
 
@@ -137,30 +152,51 @@ guilds.forEach(g => {
     };
 
     map.appendChild(marker);
-});
-
-// Coordinate labels
-
-for(let i = 0; i <= 250; i += 50){
-
-    const xLabel = document.createElement("div");
-    xLabel.className = "label";
-    xLabel.innerText = i;
-
-    xLabel.style.left = (i * scaleFactor - 10) + "px";
-    xLabel.style.top = "730px";
-
-    map.appendChild(xLabel);
-
-    const yLabel = document.createElement("div");
-    yLabel.className = "label";
-    yLabel.innerText = i;
-
-    yLabel.style.left = "5px";
-    yLabel.style.top = (pixelSize - i * scaleFactor - 8) + "px";
-
-    map.appendChild(yLabel);
 }
+
+async function loadGuilds(){
+
+    try{
+
+        const response = await fetch(CSV_URL);
+
+        const csv = await response.text();
+
+        const rows =
+            csv.trim().split("\n").slice(1);
+
+        let count = 0;
+
+        rows.forEach(row => {
+
+            const cols = row.split(",");
+
+            if(cols.length < 4) return;
+
+            const guild = {
+                name: cols[0],
+                x: Number(cols[1]),
+                y: Number(cols[2]),
+                color: cols[3].trim()
+            };
+
+            addGuild(guild);
+            count++;
+        });
+
+        document.getElementById("status").innerText =
+            `${count} guild(s) loaded`;
+
+    } catch(error){
+
+        console.error(error);
+
+        document.getElementById("status").innerText =
+            "Failed to load Google Sheet";
+    }
+}
+
+loadGuilds();
 
 // Zoom & Pan
 
@@ -185,8 +221,7 @@ viewport.addEventListener("wheel",(e)=>{
 
     if(e.deltaY < 0){
         zoom *= 1.1;
-    }
-    else{
+    } else {
         zoom /= 1.1;
     }
 
