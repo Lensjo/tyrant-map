@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <meta charset="UTF-8">
@@ -69,6 +70,7 @@ body{
     margin-top:0;
 }
 </style>
+
 </head>
 
 <body>
@@ -77,25 +79,27 @@ body{
 
 <div id="container">
 
-    <div id="viewport">
-        <div id="map"></div>
+```
+<div id="viewport">
+    <div id="map"></div>
+</div>
+
+<div id="sidebar">
+
+    <div class="panel">
+        <h3>Map Info</h3>
+        <div id="coords">X: -, Y: -</div>
+        <div id="zoom">Zoom: 100%</div>
+        <div id="status">Loading guilds...</div>
     </div>
 
-    <div id="sidebar">
-
-        <div class="panel">
-            <h3>Map Info</h3>
-            <div id="coords">X: -, Y: -</div>
-            <div id="zoom">Zoom: 100%</div>
-            <div id="status">Loading guilds...</div>
-        </div>
-
-        <div class="panel" id="info">
-            <h3>No guild selected</h3>
-            Click a guild marker.
-        </div>
-
+    <div class="panel" id="info">
+        <h3>No guild selected</h3>
+        Click a guild marker.
     </div>
+
+</div>
+```
 
 </div>
 
@@ -125,7 +129,7 @@ for(let i = 0; i <= 250; i += 50){
     yLabel.className = "label";
     yLabel.innerText = i;
     yLabel.style.left = "5px";
-    yLabel.style.top = (pixelSize - i * scaleFactor - 8) + "px";
+    yLabel.style.top = (i * scaleFactor - 8) + "px";
     map.appendChild(yLabel);
 }
 
@@ -140,7 +144,7 @@ function addGuild(g){
         (g.x * scaleFactor - 7) + "px";
 
     marker.style.top =
-        (pixelSize - g.y * scaleFactor - 7) + "px";
+        (g.y * scaleFactor - 7) + "px";
 
     marker.onclick = () => {
 
@@ -270,21 +274,17 @@ viewport.addEventListener("mousemove",(e)=>{
     const py =
         (e.clientY - rect.top - offsetY) / zoom;
 
-    const mapX =
+    let mapX =
         Math.round(px / scaleFactor);
 
-    const mapY =
-        Math.round((pixelSize - py) / scaleFactor);
+    let mapY =
+        Math.round(py / scaleFactor);
 
-    if(
-        mapX >= 0 &&
-        mapX <= 250 &&
-        mapY >= 0 &&
-        mapY <= 250
-    ){
-        document.getElementById("coords").innerText =
-            `X: ${mapX}, Y: ${mapY}`;
-    }
+    mapX = Math.max(0, Math.min(250, mapX));
+    mapY = Math.max(0, Math.min(250, mapY));
+
+    document.getElementById("coords").innerText =
+        `X: ${mapX}, Y: ${mapY}`;
 });
 
 updateTransform();
