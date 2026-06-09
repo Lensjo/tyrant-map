@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Tyrant Guild Map</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    margin:20px;
+}
+
+#container{
+    display:flex;
+    gap:20px;
+    align-items:flex-start;
+}
+
+#viewport{
+    width:800px;
+    height:800px;
+    overflow:hidden;
+    border:2px solid black;
+    cursor:crosshair;
+    position:relative;
+}
+
+#map{
+    position:absolute;
+    width:750px;
+    height:750px;
+
+    background-image:
+        linear-gradient(to right, #ddd 1px, transparent 1px),
+        linear-gradient(to bottom, #ddd 1px, transparent 1px);
+
+    background-size:30px 30px;
+
+    transform-origin:0 0;
+}
+
+.guild{
+    position:absolute;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    border:1px solid black;
+    cursor:pointer;
+}
+
+.label{
+    position:absolute;
+    font-size:12px;
+    color:#666;
+    pointer-events:none;
+}
+
+#sidebar{
+    width:280px;
+}
+
+.panel{
+    border:1px solid #ccc;
+    border-radius:8px;
+    padding:15px;
+    margin-bottom:15px;
+}
+
+.panel h3{
+    margin-top:0;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Tyrant Guild Map</h2>
+
+<div id="container">
+
+    <div id="viewport">
+        <div id="map"></div>
+    </div>
+
+    <div id="sidebar">
+
+        <div class="panel">
+            <h3>Map Info</h3>
+            <div id="coords">X: -, Y: -</div>
+            <div id="zoom">Zoom: 100%</div>
+        </div>
+
+        <div class="panel" id="info">
+            <h3>No guild selected</h3>
+            Click a guild marker.
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const mapSize = 250;
+const pixelSize = 750;
+const scaleFactor = pixelSize / mapSize;
+
+const guilds = [
+    { name:"Wolves", x:120, y:80, color:"red" },
+    { name:"Dragons", x:200, y:150, color:"blue" },
+    { name:"Titans", x:50, y:210, color:"green" },
+    { name:"Phoenix", x:170, y:50, color:"orange" },
+    { name:"Legion", x:75, y:120, color:"purple" }
+];
+
+const map = document.getElementById("map");
+
+guilds.forEach(g => {
+
+    const marker = document.createElement("div");
+
+    marker.className = "guild";
+    marker.style.background = g.color;
+
+    marker.style.left = (g.x * scaleFactor - 7) + "px";
+    marker.style.top = (pixelSize - g.y * scaleFactor - 7) + "px";
+
+    marker.title = g.name;
+
+    marker.onclick = () => {
+
+        document.getElementById("info").innerHTML = `
+            <h3>${g.name}</h3>
+            <p><b>Coordinates:</b> (${g.x}, ${g.y})</p>
+            <p><b>Color:</b> ${g.color}</p>
+        `;
+    };
+
+    map.appendChild(marker);
+});
+
+// Coordinate labels
+
+for(let i = 0; i <= 250; i += 50){
+
+    const xLabel = document.createElement("div");
+    xLabel.className = "label";
+    xLabel.innerText = i;
+
+    xLabel.style.left = (i * scaleFactor - 10) + "px";
+    xLabel.style.top = "730px";
+
+    map.appendChild(xLabel);
+
+    const yLabel = document.createElement("div");
+    yLabel.className = "label";
+    yLabel.innerText = i;
+
+    yLabel.style.left = "5px";
+    yLabel.style.top = (pixelSize - i * scaleFactor - 8) + "px";
+
+    map.appendChild(yLabel);
+}
+
+// Zoom & Pan
+
+const viewport = document.getElementById("viewport");
+
+let zoom = 1;
+let offsetX = 0;
+let offsetY = 0;
+
+function updateTransform(){
+
+    map.style.transform =
+        `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
+
+    document.getElementById("zoom").innerText =
+        `Zoom: ${Math.round(zoom * 100)}%`;
+}
+
+viewport.addEventListener("wheel",(e)=>{
+
+    e.preventDefault();
+
+    if(e.deltaY < 0){
+        zoom *= 1.1;
+    }
+    else{
+        zoom /= 1.1;
+    }
+
+    zoom = Math.max(0.5, Math.min(5, zoom));
+
+    updateTransform();
+});
+
+let dragging = false;
+let startX;
+let startY;
+
+viewport.addEventListener("mousedown",(e)=>{
+
+    dragging = true;
+
+    startX = e.clientX - offsetX;
+    startY = e.clientY - offsetY;
+});
+
+window.addEventListener("mouseup",()=>{
+
+    dragging = false;
+});
+
+window.addEventListener("mousemove",(e)=>{
+
+    if(dragging){
+
+        offsetX = e.clientX - startX;
+        offsetY = e.clientY - startY;
+
+        updateTransform();
+    }
+});
+
+// Live coordinates
+
+viewport.addEventListener("mousemove",(e)=>{
+
+    const rect = viewport.getBoundingClientRect();
+
+    const px =
+        (e.clientX - rect.left - offsetX) / zoom;
+
+    const py =
+        (e.clientY - rect.top - offsetY) / zoom;
+
+    const mapX =
+        Math.round(px / scaleFactor);
+
+    const mapY =
+        Math.round((pixelSize - py) / scaleFactor);
+
+    if(
+        mapX >= 0 &&
+        mapX <= 250 &&
+        mapY >= 0 &&
+        mapY <= 250
+    ){
+        document.getElementById("coords").innerText =
+            `X: ${mapX}, Y: ${mapY}`;
+    }
+});
+
+updateTransform();
+
+</script>
+
+</body>
+</html>
