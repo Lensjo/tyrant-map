@@ -77,10 +77,6 @@ body{
     margin-bottom:15px;
 }
 
-.panel h3{
-    margin-top:0;
-}
-
 #searchBox{
     width:180px;
     padding:6px;
@@ -99,42 +95,42 @@ button{
 
 <div id="container">
 
-```
 <div id="viewport">
     <div id="map"></div>
 </div>
 
 <div id="sidebar">
 
-    <div class="panel">
-        <h3>Search Guild</h3>
+```
+<div class="panel">
+    <h3>Search Guild</h3>
 
-        <input
-            id="searchBox"
-            type="text"
-            placeholder="Guild name or tag">
+    <input
+        id="searchBox"
+        type="text"
+        placeholder="Guild name or tag">
 
-        <button onclick="searchGuild()">
-            Search
-        </button>
+    <button onclick="searchGuild()">
+        Search
+    </button>
 
-        <div id="searchResult"></div>
-    </div>
+    <div id="searchResult"></div>
+</div>
 
-    <div class="panel">
-        <h3>Map Info</h3>
-        <div id="coords">X: -, Y: -</div>
-        <div id="zoom">Zoom: 100%</div>
-        <div id="status">Loading guilds...</div>
-    </div>
+<div class="panel">
+    <h3>Map Info</h3>
+    <div id="coords">X: -, Y: -</div>
+    <div id="zoom">Zoom: 100%</div>
+    <div id="status">Loading guilds...</div>
+</div>
 
-    <div class="panel" id="info">
-        <h3>No guild selected</h3>
-        Click a guild marker.
-    </div>
-
+<div class="panel" id="info">
+    <h3>No guild selected</h3>
+    Click a guild marker.
 </div>
 ```
+
+</div>
 
 </div>
 
@@ -151,7 +147,9 @@ const map = document.getElementById("map");
 let selectedGuildMarker = null;
 let guildData = [];
 
-// Coordinate labels
+let zoom = 1;
+let offsetX = 0;
+let offsetY = 0;
 
 for(let i = 0; i <= 250; i += 50){
 
@@ -168,6 +166,15 @@ for(let i = 0; i <= 250; i += 50){
     yLabel.style.left = "5px";
     yLabel.style.top = (i * scaleFactor - 8) + "px";
     map.appendChild(yLabel);
+}
+
+function updateTransform(){
+
+    map.style.transform =
+        `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
+
+    document.getElementById("zoom").innerText =
+        `Zoom: ${Math.round(zoom * 100)}%`;
 }
 
 function selectGuild(g, marker){
@@ -200,7 +207,7 @@ function addGuild(g){
         (g.y * scaleFactor - 9) + "px";
 
     marker.title =
-        `[${g.tag}] ${g.name} (${g.x}, ${g.y})`;
+        `[${g.tag}] ${g.name}`;
 
     marker.onclick = () => {
         selectGuild(g, marker);
@@ -218,35 +225,64 @@ async function loadGuilds(){
     try{
 
         const response = await fetch(CSV_URL);
-
         const csv = await response.text();
 
         const rows =
-            csv.trim().split("\n").slice(1);
+            csv
+            .replace(/\r/g,'')
+            .trim()
+            .split('\n');
 
-        let count = 0;
+        let loaded = 0;
+        let skipped = 0;
 
-        rows.forEach(row => {
+        for(let i=1;i<rows.length;i++){
 
-            const cols = row.split(",");
+            const cols = rows[i]
+                .split(',')
+                .map(v => v.trim());
 
-            if(cols.length < 5) return;
+            if(cols.length < 5){
+                skipped++;
+                continue;
+            }
+
+            const tag = cols[0];
+            const name = cols[1];
+            const x = Number(cols[2]);
+            const y = Number(cols[3]);
+            const color = cols[4];
+
+            if(
+                Number.isNaN(x) ||
+                Number.isNaN(y)
+            ){
+                skipped++;
+                continue;
+            }
 
             addGuild({
-                tag: cols[0].trim(),
-                name: cols[1].trim(),
-                x: Number(cols[2]),
-                y: Number(cols[3]),
-                color: cols[4].trim()
+                tag,
+                name,
+                x,
+                y,
+                color
             });
 
-            count++;
-        });
+            loaded++;
+        }
 
         document.getElementById("status").innerText =
-            `${count} guild(s) loaded`;
+            `${loaded} guild(s) loaded`;
 
-    } catch(error){
+        if(skipped > 0){
+
+            document.getElementById("status").innerText +=
+                ` (${skipped} skipped)`;
+        }
+
+    }
+    catch(error){
 
         console.error(error);
 
@@ -265,8 +301,8 @@ function searchGuild(){
 
     const guild =
         guildData.find(g =>
-            g.name.toLowerCase() === search ||
-            g.tag.toLowerCase() === search
+            g.tag.toLowerCase() === search ||
+            g.name.toLowerCase() === search
         );
 
     if(!guild){
@@ -307,26 +343,14 @@ loadGuilds();
 
 const viewport = document.getElementById("viewport");
 
-let zoom = 1;
-let offsetX = 0;
-let offsetY = 0;
-
-function updateTransform(){
-
-    map.style.transform =
-        `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
-
-    document.getElementById("zoom").innerText =
-        `Zoom: ${Math.round(zoom * 100)}%`;
-}
-
 viewport.addEventListener("wheel",(e)=>{
 
     e.preventDefault();
 
     if(e.deltaY < 0){
         zoom *= 1.1;
-    } else {
+    }
+    else{
         zoom /= 1.1;
     }
 
