@@ -347,6 +347,14 @@ viewport.addEventListener("wheel",(e)=>{
 
     e.preventDefault();
 
+    const rect = viewport.getBoundingClientRect();
+
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const worldX = (mouseX - offsetX) / zoom;
+    const worldY = (mouseY - offsetY) / zoom;
+
     if(e.deltaY < 0){
         zoom *= 1.1;
     }
@@ -355,6 +363,9 @@ viewport.addEventListener("wheel",(e)=>{
     }
 
     zoom = Math.max(0.5, Math.min(5, zoom));
+
+    offsetX = mouseX - worldX * zoom;
+    offsetY = mouseY - worldY * zoom;
 
     updateTransform();
 });
