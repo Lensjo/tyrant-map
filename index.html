@@ -41,11 +41,24 @@ body{
 
 .guild{
     position:absolute;
-    width:14px;
-    height:14px;
+    width:18px;
+    height:18px;
     border-radius:50%;
-    border:1px solid black;
+    border:2px solid white;
     cursor:pointer;
+    box-sizing:border-box;
+    transition:all 0.15s ease;
+}
+
+.guild:hover{
+    transform:scale(1.25);
+}
+
+.guild.selected{
+    box-shadow:
+        0 0 0 3px white,
+        0 0 12px 4px rgba(255,255,255,0.9);
+    z-index:1000;
 }
 
 .label{
@@ -114,6 +127,8 @@ const scaleFactor = pixelSize / mapSize;
 
 const map = document.getElementById("map");
 
+let selectedGuildMarker = null;
+
 // Coordinate labels
 
 for(let i = 0; i <= 250; i += 50){
@@ -141,12 +156,23 @@ function addGuild(g){
     marker.style.background = g.color;
 
     marker.style.left =
-        (g.x * scaleFactor - 7) + "px";
+        (g.x * scaleFactor - 9) + "px";
 
     marker.style.top =
-        (g.y * scaleFactor - 7) + "px";
+        (g.y * scaleFactor - 9) + "px";
+
+    // Browser tooltip
+    marker.title =
+        `${g.name} (${g.x}, ${g.y})`;
 
     marker.onclick = () => {
+
+        if(selectedGuildMarker){
+            selectedGuildMarker.classList.remove("selected");
+        }
+
+        marker.classList.add("selected");
+        selectedGuildMarker = marker;
 
         document.getElementById("info").innerHTML = `
             <h3>${g.name}</h3>
