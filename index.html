@@ -112,7 +112,7 @@ button{
         <input
             id="searchBox"
             type="text"
-            placeholder="Guild name">
+            placeholder="Guild name or tag">
 
         <button onclick="searchGuild()">
             Search
@@ -143,9 +143,8 @@ button{
 const CSV_URL =
 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT5lyYvujRZ3Wn0nR_4P51h4q3XC8RxM7g3UBTsuQbKHp8z7xQYR4VD-51OVqrEjy2tVxxb33e8ZPAn/pub?gid=0&single=true&output=csv';
 
-const mapSize = 250;
 const pixelSize = 750;
-const scaleFactor = pixelSize / mapSize;
+const scaleFactor = pixelSize / 250;
 
 const map = document.getElementById("map");
 
@@ -181,7 +180,7 @@ function selectGuild(g, marker){
     selectedGuildMarker = marker;
 
     document.getElementById("info").innerHTML = `
-        <h3>${g.name}</h3>
+        <h3>[${g.tag}] ${g.name}</h3>
         <p><b>Coordinates:</b> (${g.x}, ${g.y})</p>
         <p><b>Color:</b> ${g.color}</p>
     `;
@@ -201,7 +200,7 @@ function addGuild(g){
         (g.y * scaleFactor - 9) + "px";
 
     marker.title =
-        `${g.name} (${g.x}, ${g.y})`;
+        `[${g.tag}] ${g.name} (${g.x}, ${g.y})`;
 
     marker.onclick = () => {
         selectGuild(g, marker);
@@ -231,13 +230,14 @@ async function loadGuilds(){
 
             const cols = row.split(",");
 
-            if(cols.length < 4) return;
+            if(cols.length < 5) return;
 
             addGuild({
-                name: cols[0].trim(),
-                x: Number(cols[1]),
-                y: Number(cols[2]),
-                color: cols[3].trim()
+                tag: cols[0].trim(),
+                name: cols[1].trim(),
+                x: Number(cols[2]),
+                y: Number(cols[3]),
+                color: cols[4].trim()
             });
 
             count++;
@@ -265,7 +265,8 @@ function searchGuild(){
 
     const guild =
         guildData.find(g =>
-            g.name.toLowerCase() === search
+            g.name.toLowerCase() === search ||
+            g.tag.toLowerCase() === search
         );
 
     if(!guild){
@@ -303,8 +304,6 @@ document
 });
 
 loadGuilds();
-
-// Zoom & Pan
 
 const viewport = document.getElementById("viewport");
 
@@ -349,7 +348,6 @@ viewport.addEventListener("mousedown",(e)=>{
 });
 
 window.addEventListener("mouseup",()=>{
-
     dragging = false;
 });
 
@@ -363,8 +361,6 @@ window.addEventListener("mousemove",(e)=>{
         updateTransform();
     }
 });
-
-// Live coordinates
 
 viewport.addEventListener("mousemove",(e)=>{
 
