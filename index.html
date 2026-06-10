@@ -30,11 +30,9 @@ body{
     position:absolute;
     width:750px;
     height:750px;
-
     background-image:
         linear-gradient(to right, #ddd 1px, transparent 1px),
         linear-gradient(to bottom, #ddd 1px, transparent 1px);
-
     background-size:30px 30px;
     transform-origin:0 0;
 }
@@ -69,7 +67,7 @@ body{
 }
 
 #sidebar{
-    width:300px;
+    width:320px;
 }
 
 .panel{
@@ -81,6 +79,15 @@ body{
 
 .panel h3{
     margin-top:0;
+}
+
+#searchBox{
+    width:180px;
+    padding:6px;
+}
+
+button{
+    padding:6px 10px;
 }
 </style>
 
@@ -98,6 +105,21 @@ body{
 </div>
 
 <div id="sidebar">
+
+    <div class="panel">
+        <h3>Search Guild</h3>
+
+        <input
+            id="searchBox"
+            type="text"
+            placeholder="Guild name">
+
+        <button onclick="searchGuild()">
+            Search
+        </button>
+
+        <div id="searchResult"></div>
+    </div>
 
     <div class="panel">
         <h3>Map Info</h3>
@@ -128,6 +150,7 @@ const scaleFactor = pixelSize / mapSize;
 const map = document.getElementById("map");
 
 let selectedGuildMarker = null;
+let guildData = [];
 
 // Coordinate labels
 
@@ -148,6 +171,22 @@ for(let i = 0; i <= 250; i += 50){
     map.appendChild(yLabel);
 }
 
+function selectGuild(g, marker){
+
+    if(selectedGuildMarker){
+        selectedGuildMarker.classList.remove("selected");
+    }
+
+    marker.classList.add("selected");
+    selectedGuildMarker = marker;
+
+    document.getElementById("info").innerHTML = `
+        <h3>${g.name}</h3>
+        <p><b>Coordinates:</b> (${g.x}, ${g.y})</p>
+        <p><b>Color:</b> ${g.color}</p>
+    `;
+}
+
 function addGuild(g){
 
     const marker = document.createElement("div");
@@ -161,25 +200,16 @@ function addGuild(g){
     marker.style.top =
         (g.y * scaleFactor - 9) + "px";
 
-    // Browser tooltip
     marker.title =
         `${g.name} (${g.x}, ${g.y})`;
 
     marker.onclick = () => {
-
-        if(selectedGuildMarker){
-            selectedGuildMarker.classList.remove("selected");
-        }
-
-        marker.classList.add("selected");
-        selectedGuildMarker = marker;
-
-        document.getElementById("info").innerHTML = `
-            <h3>${g.name}</h3>
-            <p><b>Coordinates:</b> (${g.x}, ${g.y})</p>
-            <p><b>Color:</b> ${g.color}</p>
-        `;
+        selectGuild(g, marker);
     };
+
+    g.marker = marker;
+
+    guildData.push(g);
 
     map.appendChild(marker);
 }
@@ -203,14 +233,13 @@ async function loadGuilds(){
 
             if(cols.length < 4) return;
 
-            const guild = {
-                name: cols[0],
+            addGuild({
+                name: cols[0].trim(),
                 x: Number(cols[1]),
                 y: Number(cols[2]),
                 color: cols[3].trim()
-            };
+            });
 
-            addGuild(guild);
             count++;
         });
 
@@ -225,6 +254,53 @@ async function loadGuilds(){
             "Failed to load Google Sheet";
     }
 }
+
+function searchGuild(){
+
+    const search =
+        document.getElementById("searchBox")
+        .value
+        .trim()
+        .toLowerCase();
+
+    const guild =
+        guildData.find(g =>
+            g.name.toLowerCase() === search
+        );
+
+    if(!guild){
+
+        document.getElementById("searchResult")
+            .innerText = "Guild not found";
+
+        return;
+    }
+
+    document.getElementById("searchResult")
+        .innerText = "";
+
+    selectGuild(guild, guild.marker);
+
+    zoom = 2;
+
+    offsetX =
+        400 - (guild.x * scaleFactor * zoom);
+
+    offsetY =
+        400 - (guild.y * scaleFactor * zoom);
+
+    updateTransform();
+}
+
+document
+.getElementById("searchBox")
+.addEventListener("keydown", e => {
+
+    if(e.key === "Enter"){
+        searchGuild();
+    }
+
+});
 
 loadGuilds();
 
